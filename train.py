@@ -7,7 +7,7 @@ from torch.autograd import Variable
 import torch.optim as optim
 import cv2
 import os
-from warpctc_pytorch import CTCLoss
+from torch.nn import CTCLoss
 from glob import glob
 import utils
 import shutil
@@ -99,22 +99,35 @@ for epoch in range(1, args.epoches, 1):
     train_acc = 0.0
     test_acc = 0.0
     for batch_id,(img_tensor, txt_len, txt_label, txt_name) in tqdm(enumerate(trainloader)):
+        #import pdb; pdb.set_trace()
         optimizer.zero_grad()
+        # img_tensor.shape=torch.Size([4, 1, 32, 100])
         batch_length = img_tensor.size(0)
+        # https://pytorch.org/docs/stable/nn.html#CTCLoss
+        # In order to use CuDNN, the following must be satisfied: `targets` must be
+        #in concatenated format.
+        # convert target: txt_label from ( 4, 20 ) -> concatenated form
         txt_label = txt_label.numpy().reshape(args.max_len*batch_length)
+        # remove 0 
         txt_label = torch.from_numpy(np.array([item for item in txt_label if item != 0]).astype(np.int))
         if args.is_use_gpu:
             img_tensor = Variable(img_tensor.float()).cuda()
         else:
             img_tensor = Variable(img_tensor.float())
+        # e.g: txt_len = [4,4,7,6]
         txt_len = Variable(txt_len.int()).squeeze(1)
+        # e.g: txt_label = [ 5,  6, 17,  2, 33, 18, 22, 31,  9,  4,  8,  5,  2,  8,  9,  6,  5,  3,
+        #  5,  5,  3]
         txt_label = Variable(txt_label.int())
-
+  
+        # preds shape: torch.Size([26, 4, 37])
+        # 26 means time steps, 4 is batch size, 37 is size of classes
         preds = crnn(img_tensor)
         preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_length))
-        total_loss = criterion(preds, txt_label, preds_size, txt_len) / batch_length
+        total_loss = criterion(preds, txt_label, preds_size, txt_len) 
         total_loss.backward()
         optimizer.step()
+        # check pred, get max on dim=2 to get prediction
         _, preds = preds.max(2)
         preds = preds.transpose(1, 0).contiguous().view(-1)
         sim_preds = converter.decode(preds.data, preds_size.data, raw=False)
@@ -123,7 +136,7 @@ for epoch in range(1, args.epoches, 1):
                 train_acc += 1
         avg_totalLoss += total_loss.item()
         info='epoch : %d ,process: %d/%d ,  totalLoss: %f , lr: %f  ' % (epoch, batch_id, trainloader.__len__(), total_loss.item(), optimizer.param_groups[0]['lr'])
-        #print(info)
+        print(info)
         #break
     train_acc /= len(dataset)
     avg_train_acc.append(train_acc)

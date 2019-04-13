@@ -67,6 +67,7 @@ class CRNN(nn.Module):
             BidirectionalLSTM(nh, nh, nclass))
 
     def forward(self, input):
+        #import pdb; pdb.set_trace()
         # conv features
         conv = self.cnn(input)
         b, c, h, w = conv.size()
@@ -77,10 +78,13 @@ class CRNN(nn.Module):
         # rnn features
         output = self.rnn(conv)
 
+        # last one: 37 classes = 26 [a-z] + 10 digits + blank
+        output = nn.functional.log_softmax(output, dim=2)
+
         return output
 if __name__ == '__main__':
     x = torch.randn(1,1,32,160)
     model = CRNN(32, 1, 37, 256)
     y = model(x)
     print(y.size())
-    #print(model)
+    print(model)
