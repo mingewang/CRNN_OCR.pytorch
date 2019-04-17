@@ -83,8 +83,14 @@ class CRNN(nn.Module):
 
         return output
 if __name__ == '__main__':
-    x = torch.randn(1,1,32,160)
+    #import pdb; pdb.set_trace()
     model = CRNN(32, 1, 37, 256)
+    print("model is:", model )
+
+    x = torch.randn(1,1,32,160)
     y = model(x)
-    print(y.size())
-    print(model)
+    print("input:", x.size(), "output:", y.size())
+
+    x1 = torch.randn(1,1,32,100)
+    y1 = model(x1)
+    print("input:", x1.size(), "output:", y1.size())
