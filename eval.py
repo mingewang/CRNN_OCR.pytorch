@@ -59,6 +59,7 @@ def get_img(img_path):
 
 
 for img_path in test_img_list:
+    print('file:', img_path)
     img_tensor = get_img(img_path)
     if args.is_use_gpu:
         img_tensor = Variable(img_tensor).cuda()

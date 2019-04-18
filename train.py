@@ -123,6 +123,7 @@ for epoch in range(1, args.epoches, 1):
         # preds shape: torch.Size([26, 4, 37])
         # 26 means time steps, 4 is batch size, 37 is size of classes
         preds = crnn(img_tensor)
+        # preds_size : tensor([26, 26, 26, 26]
         preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_length))
         total_loss = criterion(preds, txt_label, preds_size, txt_len) 
         total_loss.backward()
